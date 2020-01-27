@@ -5,6 +5,7 @@ const OrderItem = Models.OrderItem;
 const Inventory = Models.Inventory;
 const ServiceError = require('../utils/serviceError');
 const Joi = require('@hapi/joi');
+const _ = require('lodash');
 
 // create validation
 const createSchema = Joi.object({
@@ -75,50 +76,60 @@ const show = function(req, res, next) {
  * create new inventory
  */
 const create = async function(req, res, next) {
-  let order = createSchema.validate(req.body);
-  if (order.error) {
-    next(new ServiceError(400, order.error.details[0].message));
-  }
-
+  let t;
   try {
-    let orderValue = order.value;
+    let orderValidation = createSchema.validate(req.body);
+    if (orderValidation.error) {
+      throw new ServiceError(400, _.get(orderValidation, 'error.details[0].message'));
+    }
+
+    t = await sequelize.transaction();
+    let orderValue = orderValidation.value;
 
     // create order
     const orderObject = await Order.create({
       email: orderValue.email,
-      date: new Date(),
+      date: orderValue.date ? orderValue.date : new Date(),
       status: 'created'
-    });
+    }, {transaction: t});
     const orderId = orderObject.id;
     
     // create order items data
     // validate inventory id and quantity
-    orderValue.items.forEach(async (item) => {
+    for (let item of orderValue.items) {
       const inventory = await Inventory.findByPk(item.inventoryId);
       if (!inventory) {
-        next(new ServiceError(400, `Inventory id ${item.inventoryId} is not found`));
+        throw new ServiceError(400, `Inventory id ${item.inventoryId} does not have enough quantity`);
       }
       if (inventory.quantity < item.quantity) {
-        next(new ServiceError(400, `Inventory id ${item.inventoryId} does not have enough quantity`));
+        throw new ServiceError(400, `Inventory id ${item.inventoryId} does not have enough quantity`);
       }
 
       inventory.quantity -= item.quantity;
-      inventory.save();
+      inventory.save({transaction: t});
 
       await OrderItem.create({
         inventoryId: item.inventoryId,
         quantity: item.quantity,
         orderId: orderId,
         price: inventory.price
-      });
+      }, {transaction: t});
+    }
+
+    await t.commit();
+
+    const createdOrder = await Order.findByPk(orderId, {
+      include: [{
+        model: OrderItem,
+        include: [Inventory]
+      }]
     });
 
-    res.json({
-      message: "Create order successfully"
-    });
+    res.json(createdOrder);
 
   } catch (e) {
-    next(new ServiceError(400, e.message));
+    if (t) await t.rollback();
+    next(e);
   }
 }
 
@@ -168,7 +179,8 @@ const cancel = async function(req, res, next) {
   }
 }
 
-const _clearOrderItem = async function(orderId) {
+const _clearOrderItem = async function(orderId, transaction) {
+  let options = transaction ? {transaction} : {};
   const orderItems = await OrderItem.findAll({
     where: {orderId: orderId}
   },{
@@ -178,22 +190,24 @@ const _clearOrderItem = async function(orderId) {
   for (let orderItem of orderItems) {
     inventory = await Inventory.findByPk(orderItem.inventoryId);
     inventory.quantity += orderItem.quantity;
-    await inventory.save();
-    await orderItem.destroy();
+    await inventory.save(options);
+    await orderItem.destroy(options);
   }
 }
 
-const _addOrderItem = async function(items) {
+const _addOrderItem = async function(items, transaction) {
+  let options = transaction ? {transaction} : {};
   for (let orderItem of items) {
-    await OrderItem.create(orderItem);
+    await OrderItem.create(orderItem, options);
   }
 }
 
-const _deductInventoryQuantity = async function(orderItems) {
+const _deductInventoryQuantity = async function(orderItems, transaction) {
+  let options = transaction ? {transaction} : {};
   for (let orderItem of orderItems) {
     inventory = await Inventory.findByPk(orderItem.inventoryId);
     inventory.quantity -= orderItem.quantity;
-    inventory.save();
+    await inventory.save(options);
   }
 }
 
@@ -201,6 +215,7 @@ const _deductInventoryQuantity = async function(orderItems) {
  * Edit an order
  */
 const edit = async function(req, res, next) {
+  let t = null;
   try {
     const findValidation = findSchema.validate(req.params);
     const editValidation = editSchema.validate(req.body);
@@ -211,35 +226,39 @@ const edit = async function(req, res, next) {
       throw new ServiceError(400, _.get(editValidation, 'error.details[0].message'));
     }
 
-    await sequelize.transaction(async () => {
-      const orderData = editValidation.value;
-      const order = await Order.findByPk(findValidation.value.id, {
-        include: [{
-          model: OrderItem,
-          include: [Inventory]
-        }]
-      });
+    t = await sequelize.transaction();
 
-      // edit order
-      await order.update(orderData, {
-        fields: ['email', 'date']
-      })
+    const orderData = editValidation.value;
+    const order = await Order.findByPk(findValidation.value.id, {
+      include: [{
+        model: OrderItem,
+        include: [Inventory]
+      }]
+    });
 
+    // edit order
+    await order.update(orderData, {
+      fields: ['email', 'date']
+    }, {transaction: t})
+
+    if (orderData.items) {
       // update order id
       orderItemsData = orderData.items.map(item => {
         item.orderId = order.id
         return item;
       });
-
+  
       // remove all inventory out
-      await _clearOrderItem(findValidation.value.id);
-
+      await _clearOrderItem(findValidation.value.id, t);
+  
       // add new order item back
-      await _addOrderItem(orderData.items);
-
+      await _addOrderItem(orderData.items, t);
+  
       // update inventory quantity
-      await _deductInventoryQuantity(orderData.items);
-    });
+      await _deductInventoryQuantity(orderData.items, t);
+    }
+
+    await t.commit();
 
     const newOrder = await Order.findByPk(findValidation.value.id, {
       include: [{
@@ -254,6 +273,7 @@ const edit = async function(req, res, next) {
     });
 
   } catch (e) {
+    await t.rollback();
     console.error(e);
     console.log(e.message);
     next(e);

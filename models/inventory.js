@@ -14,10 +14,8 @@ module.exports = function(model) {
     quantity: {
       type: Sequelize.INTEGER
     },
-    deleted: {
-      type: Sequelize.BOOLEAN,
-      defaultValue: false
-    }
+  }, {
+    paranoid: true,
   });
 };
 

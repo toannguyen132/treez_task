@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser')
 const app = express();
-const PORT = 3000;
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -12,7 +11,6 @@ app.use(bodyParser.json())
 const inventoryRoute = require('./routes/inventory');
 const orderRoute = require('./routes/order');
 const ServiceError = require('./utils/serviceError');
-
 
 app.get('/', (req, res) => res.send('OK'))
 app.post('/', function (req, res) {
@@ -35,4 +33,4 @@ app.use((err, req, res, next) => {
   }
 })
 
-app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`))
+module.exports = app;
