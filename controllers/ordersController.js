@@ -36,7 +36,7 @@ const editSchema = Joi.object({
 
 // find schema
 const findSchema = Joi.object({
-  id: Joi.number().min(0).required()
+  id: Joi.number().positive().required()
 })
 
 // ------------------------------------------------
@@ -55,23 +55,33 @@ const index = function(req, res) {
  * GET /orders/:id
  * show single inventory and its order items
  */
-const show = function(req, res, next) {
-  let id = req.params.id;
-  Order.findByPk(id, {
-    include: [{
-      model: OrderItem,
-      include: [
-        Inventory
-      ]
-    }]
-  }).then((order) => {
-    if (order) {
-      res.json(order);
+const show = async function(req, res, next) {
+  try {
+    const idValidation = findSchema.validate(req.params);
+    if (idValidation.error) {
+      throw new ServiceError(400, _.get(idValidation, 'error.details[0].message', 'Id is invalid'));
+    } 
+      
+    let id = idValidation.value.id;
+
+    const order = await Order.findByPk(id, {
+      include: [{
+        model: OrderItem,
+        include: [
+          Inventory
+        ]
+      }]
+    });
+
+    if (!order) {
+      throw new ServiceError(404, "Cannot find order");
     }
-    throw new Error("No order found");
-  }).catch((err) => {
-    next(new ServiceError(400, err.message));
-  })
+
+    res.json(order);
+  } catch (e) {
+    next(e);
+  }
+  
 }
 
 /**
@@ -222,6 +232,7 @@ const _deductInventoryQuantity = async function(orderItems, transaction) {
  */
 const edit = async function(req, res, next) {
   let t = null;
+
   try {
     const findValidation = findSchema.validate(req.params);
     const editValidation = editSchema.validate(req.body);
@@ -273,15 +284,10 @@ const edit = async function(req, res, next) {
       }]
     });
 
-    res.json({
-      message: "Update Successfully",
-      data: newOrder
-    });
+    res.json(newOrder);
 
   } catch (e) {
-    await t.rollback();
-    console.error(e);
-    console.log(e.message);
+    if (t) await t.rollback();
     next(e);
   }
 }

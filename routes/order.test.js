@@ -113,6 +113,20 @@ describe('Test orders endpoints', () => {
     expect(resp.statusCode).toBe(200);
     expect(resp.body.id).toEqual(createdOrder.id);
   });
+
+  // test get single inventory
+  test('It should response 404 if request non exist order', async () => {
+    const resp = await request(app).get(`${PATH_ORDER}/9999999999`);
+    expect(resp.statusCode).toBe(404);
+    expect(resp.body).toHaveProperty('message');
+  });
+
+  // test get single inventory
+  test('It should response 400 if request invaid id', async () => {
+    const resp = await request(app).get(`${PATH_ORDER}/0`);
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toHaveProperty('message');
+  });
   
   // test get create new order
   test('It should response with detail of order after creating', async () => {
@@ -203,6 +217,21 @@ describe('Test orders endpoints', () => {
       .send(editedOrderData);
 
     expect(resp.statusCode).toBe(200);
+    expect(resp.body.order_items).toHaveLength(2); // the order items should be the same
+  });
+
+  // test edit order
+  test('It should response 400 if edit with invalid data', async () => {
+    const editedOrderData = {
+      email: 'this is not an email'
+    }
+
+    const resp = await request(app)
+      .put(`${PATH_ORDER}/${createdOrder.id}`)
+      .send(editedOrderData);
+
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toHaveProperty('message');
   });
 
   // test edit order

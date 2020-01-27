@@ -38,13 +38,13 @@ const show = async function(req, res, next) {
   try {
     let validateResult = findSchema.validate(req.params);
     if (validateResult.error) {
-      throw new ServiceError(400, _.get(validateResult, 'error.details[0].message'))
+      throw new ServiceError(400, _.get(validateResult, 'error.details[0].message'));
     }
   
     let id = validateResult.value.id
     inventory = await Inventory.findByPk(id);
     if (!inventory) {
-      throw new ServiceError(404, _.get(validateResult, 'error.details[0].message'))
+      throw new ServiceError(404, 'Cannot find the inventory');
     }
     res.json(inventory);
   } catch (e) {

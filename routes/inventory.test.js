@@ -53,10 +53,25 @@ describe('Test the inventories endpoints', () => {
   });
 
   // test get single inventory
-  test('It should get a single inventory', async () => {
+  test('It should response corresponding inventory when request to /inventories/:id ', async () => {
     const resp = await request(app).get(`${PATH}/${createdItem.id}`);
     expect(resp.statusCode).toBe(200);
     expect(resp.body.id).toEqual(createdItem.id);
+  });
+
+  // test get single inventory
+  test('It should response 400 if request invalid id', async () => {
+    const resp = await request(app).get(`${PATH}/0`);
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toHaveProperty('message');
+  });
+
+  // test get single inventory
+  test('It should response 404 if request non-existed inventory', async () => {
+    const resp = await request(app).get(`${PATH}/9999999`);
+    console.log(resp.body);
+    expect(resp.statusCode).toBe(404);
+    expect(resp.body).toHaveProperty('message');
   });
 
   // test create inventory
@@ -66,6 +81,19 @@ describe('Test the inventories endpoints', () => {
     const findResp = await request(app).get(`${PATH}/${id}`);
     expect(findResp.statusCode).toBe(200);
     expect(findResp.body.id).not.toBeFalsy();
+  });
+
+  // test create inventory
+  test('It should response 400 when create new inventory with invalid data', async () => {
+    const id = createdItem.id;
+    const invalidData = {...sampleInventory, price: -1, quanlity: "one hundred"};
+
+    const findResp = await request(app)
+      .post(`${PATH}`)
+      .send(invalidData)
+
+    expect(findResp.statusCode).toBe(400);
+    expect(findResp.body).toHaveProperty('message');
   });
 
   // test edit inventory
@@ -87,6 +115,24 @@ describe('Test the inventories endpoints', () => {
     expect(resp.body.name).toEqual(editedData.name);
     expect(resp.body.price).toEqual(editedData.price);
     expect(resp.body.quantity).toEqual(editedData.quantity);
+  });
+
+  // test edit inventory
+  test('It should response error if edit with invalid data', async () => {
+    const id = createdItem.id;
+    const editedData = {
+      name: 'new name',
+      price: 10,
+      quantity: -200
+    };
+
+    const resp = await request(app)
+      .put(`${PATH}/${id}`)
+      .send(editedData)
+      .set('Accept', 'application/json');
+
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toHaveProperty('message');
   });
 
   // test delete inventory
