@@ -12,15 +12,13 @@ const inventoryRoute = require('./routes/inventory');
 const orderRoute = require('./routes/order');
 const ServiceError = require('./utils/serviceError');
 
-app.get('/', (req, res) => res.send('OK'))
-app.post('/', function (req, res) {
-  res.send('hello world')
-})
-
+// inventories endpoint
 app.use('/inventories', inventoryRoute);
+
+// orders endpoint
 app.use('/orders', orderRoute);
 
-// handle error
+// central error handling
 app.use((err, req, res, next) => {
   if (err instanceof ServiceError) {
     res.status(err.statusCode).send({
