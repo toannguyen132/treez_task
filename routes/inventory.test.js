@@ -11,8 +11,9 @@ afterAll((done) => {
   sequelize.close().then(() => done());
 });
 
-describe('Test the inventories PATH', () => {
+describe('Test the inventories endpoints', () => {
 
+  // the sample inventory added in every test to check
   const sampleInventory = {
     name: "test inventory",
     description: "sample description",
@@ -65,7 +66,6 @@ describe('Test the inventories PATH', () => {
     const findResp = await request(app).get(`${PATH}/${id}`);
     expect(findResp.statusCode).toBe(200);
     expect(findResp.body.id).not.toBeFalsy();
-
   });
 
   // test edit inventory
@@ -90,7 +90,7 @@ describe('Test the inventories PATH', () => {
   });
 
   // test delete inventory
-  test('It should able to delete inventory', async () => {
+  test('It should response 404 after delete an inventory', async () => {
     const id = createdItem.id;
 
     // delete inventory
@@ -98,7 +98,7 @@ describe('Test the inventories PATH', () => {
       .delete(PATH + `/${id}`);
     expect(deleteResp.statusCode).toBe(200);
 
-    // find the inventory again and check deleted
+    // it should
     const findResp = await request(app).get(`${PATH}/${inventory.id}`);
     expect(findResp.statusCode).toBe(404);
   });

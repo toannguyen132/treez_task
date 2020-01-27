@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "start": "nodemon server.js",
-    "test": "jest"
+    "test": "jest",
+    "migrate": "node utils/migrate.js; node utils/seeds.js"
   },
   "dependencies": {
     "@hapi/joi": "15.1.1",

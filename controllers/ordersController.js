@@ -7,6 +7,7 @@ const ServiceError = require('../utils/serviceError');
 const Joi = require('@hapi/joi');
 const _ = require('lodash');
 
+/** VALIDATION SCHEMA */
 // create validation
 const createSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -38,8 +39,10 @@ const findSchema = Joi.object({
   id: Joi.number().min(0).required()
 })
 
+// ------------------------------------------------
+
 /**
- * GET
+ * GET /orders
  * list all inventory
  */
 const index = function(req, res) {
@@ -49,7 +52,7 @@ const index = function(req, res) {
 }
 
 /**
- * GET
+ * GET /orders/:id
  * show single inventory and its order items
  */
 const show = function(req, res, next) {
@@ -72,7 +75,7 @@ const show = function(req, res, next) {
 }
 
 /**
- * POST
+ * POST /orders
  * create new inventory
  */
 const create = async function(req, res, next) {
@@ -134,6 +137,7 @@ const create = async function(req, res, next) {
 }
 
 /**
+ * DELETE /orders/:id
  * Cancel an order
  */
 const cancel = async function(req, res, next) {
@@ -179,6 +183,7 @@ const cancel = async function(req, res, next) {
   }
 }
 
+// ----------------------------------------------
 const _clearOrderItem = async function(orderId, transaction) {
   let options = transaction ? {transaction} : {};
   const orderItems = await OrderItem.findAll({
@@ -212,6 +217,7 @@ const _deductInventoryQuantity = async function(orderItems, transaction) {
 }
 
 /**
+ * PUT /orders/:id
  * Edit an order
  */
 const edit = async function(req, res, next) {

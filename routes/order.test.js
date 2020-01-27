@@ -14,6 +14,7 @@ afterAll((done) => {
   sequelize.close().then(() => done());
 });
 
+
 describe('Test orders endpoints', () => {
 
   const sampleInventories = [{
@@ -202,11 +203,10 @@ describe('Test orders endpoints', () => {
       .send(editedOrderData);
 
     expect(resp.statusCode).toBe(200);
-    console.log(resp.body);
   });
 
   // test edit order
-  test('It should response correct quantity when edit', async () => {
+  test('It should response the correct quantity when edit', async () => {
     const editedOrderData = {
       email: 'test@gmail.com',
       items: [{

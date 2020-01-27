@@ -3,7 +3,7 @@ const Joi           = require('@hapi/joi');
 const ServiceError  = require('./../utils/serviceError');
 const _             = require('lodash');
 
-/** Validations */
+/** Validations schema */
 const createSchema = Joi.object({
   name: Joi.string().required(),
   description: Joi.string().required(),
@@ -21,7 +21,7 @@ const findSchema = Joi.object({
 });
 
 /**
- * GET
+ * GET /inventories
  * list all inventory
  */
 const index = function(req, res) {
@@ -31,7 +31,7 @@ const index = function(req, res) {
 }
 
 /**
- * GET
+ * GET /inventories/:id
  * show single inventory
  */
 const show = async function(req, res, next) {
@@ -48,13 +48,12 @@ const show = async function(req, res, next) {
     }
     res.json(inventory);
   } catch (e) {
-    console.log(e);
     next(e);
   }
 }
 
 /**
- * POST
+ * POST /inventories
  * create new inventory
  */
 const create = async function(req, res, next) {
@@ -67,11 +66,14 @@ const create = async function(req, res, next) {
     let inventory = await Inventory.create(validateResult.value);
     res.json(inventory);
   } catch (e) {
-    console.log(e.message);
     next(e);
   }
 }
 
+/**
+ * PUT /inventories/:id
+ * Edit inventory
+ */
 const edit = async function(req, res, next) {
   try {
     let findValidation = findSchema.validate(req.params);
@@ -104,6 +106,7 @@ const edit = async function(req, res, next) {
 }
 
 /**
+ * DELETE /inventories/:id
  * Delete a inventory
  */
 const remove = async function(req, res, next) {
@@ -123,7 +126,6 @@ const remove = async function(req, res, next) {
       message: `Error: ${inventory.name} has been deleted successfully!`
     })
   } catch (e) {
-    console.log(e);
     next(e)
   }
 }
