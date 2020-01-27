@@ -4,6 +4,13 @@ Treez Take-Home interview
 
 See the project description: [click here](https://docs.google.com/document/d/14rhw1-wBinueKyZ-gsqNi4-fzGBe9wizmerc5EO0DrA/edit#)
 
+## Demo URL
+
+The service endpoints can be access at http://treez.afullstackdev.com/
+
+Order endpoints: http://treez.afullstackdev.com/orders
+
+Inventory endpoints: http://treez.afullstackdev.com/inventories
 
 ## Environment requirements
 
