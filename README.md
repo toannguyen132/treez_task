@@ -9,13 +9,15 @@ See the project description: [click here](https://docs.google.com/document/d/14r
 
 the project uses the following technologies:
 
-* NodeJS 
+* NodeJS (Express)
 * Mysql
 
 Please install these software and tools in order to use the service
 
+```
 node v10
 yarn v1.21 or npm v6.4.1
+```
 
 ## instalation the libraries & migrate the data
 
